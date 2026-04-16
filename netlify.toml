@@ -2,6 +2,9 @@
   command = "npm run build"
   publish = "build"
 
+[build.environment]
+  CI = "false"
+
 # Fix: redirect all routes to index.html so refreshing the app doesn't 404
 [[redirects]]
   from = "/*"
