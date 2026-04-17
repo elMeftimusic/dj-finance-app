@@ -33,17 +33,30 @@ export default function Settings() {
     setPinMsg({ text: "PIN changed!", ok: true });
     setTimeout(() => setPinMsg(null), 3000);
   };
-  const [profile, setProfile] = useState({
-    name: "Moe",
-    lastName: "",
-    address: "Musterstraße 1, 10115 Berlin",
-    email: "moe@example.com",
-    phone: "+49 XXX XXXXXXX",
-    taxNumber: "12/345/67890",
-    bankName: "Your Bank",
-    iban: "DE00 XXXX XXXX XXXX XXXX XX",
-    bic: "XXXXXXXX",
-  });
+  const DEFAULT_PROFILE = {
+    name: "Mohamad",
+    lastName: "Tinawi",
+    address: "Berlin, Deutschland",
+    email: "",
+    phone: "",
+    taxNumber: "134/5212/2986",
+    bankName: "N26",
+    iban: "DE53 1001 1001 2086 9274 76",
+    bic: "",
+  };
+
+  const loadProfile = () => {
+    try {
+      const saved = localStorage.getItem("djfinance_profile");
+      if (!saved) return DEFAULT_PROFILE;
+      const p = JSON.parse(saved);
+      return { ...DEFAULT_PROFILE, ...p };
+    } catch {
+      return DEFAULT_PROFILE;
+    }
+  };
+
+  const [profile, setProfile] = useState(loadProfile);
 
   const set = (k, v) => setProfile(p => ({ ...p, [k]: v }));
 

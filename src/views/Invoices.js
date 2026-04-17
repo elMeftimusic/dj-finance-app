@@ -5,16 +5,36 @@ import { generateInvoicePDF } from "../lib/pdfInvoice";
 
 const today = new Date().toISOString().split("T")[0];
 
-const OWNER_SETTINGS = {
-  ownerName: "Moe [Last Name]",
-  ownerAddress: "Musterstraße 1\n10115 Berlin",
-  ownerEmail: "moe@example.com",
-  ownerPhone: "+49 XXX XXXXXXX",
-  taxNumber: "12/345/67890",
-  bankName: "Your Bank",
-  iban: "DE00 XXXX XXXX XXXX XXXX XX",
-  bic: "XXXXXXXX",
+const DEFAULT_OWNER = {
+  ownerName: "Mohamad Tinawi",
+  ownerAddress: "Berlin, Deutschland",
+  ownerEmail: "",
+  ownerPhone: "",
+  taxNumber: "134/5212/2986",
+  bankName: "N26",
+  iban: "DE53 1001 1001 2086 9274 76",
+  bic: "",
 };
+
+function getOwnerSettings() {
+  try {
+    const saved = localStorage.getItem("djfinance_profile");
+    if (!saved) return DEFAULT_OWNER;
+    const p = JSON.parse(saved);
+    return {
+      ownerName: `${p.name || ""} ${p.lastName || ""}`.trim() || DEFAULT_OWNER.ownerName,
+      ownerAddress: p.address || DEFAULT_OWNER.ownerAddress,
+      ownerEmail: p.email || DEFAULT_OWNER.ownerEmail,
+      ownerPhone: p.phone || DEFAULT_OWNER.ownerPhone,
+      taxNumber: p.taxNumber || DEFAULT_OWNER.taxNumber,
+      bankName: p.bankName || DEFAULT_OWNER.bankName,
+      iban: p.iban || DEFAULT_OWNER.iban,
+      bic: p.bic || DEFAULT_OWNER.bic,
+    };
+  } catch {
+    return DEFAULT_OWNER;
+  }
+}
 
 function NewInvoiceModal({ onClose }) {
   const { addInvoice } = useApp();
@@ -35,11 +55,18 @@ function NewInvoiceModal({ onClose }) {
   const submit = async () => {
     if (!form.client || !form.netAmount || !form.description) return;
     setSaving(true);
-    const saved = await addInvoice({ ...form, netAmount: parseFloat(form.netAmount) });
-    setSaving(false);
-    // Auto-download PDF
-    generateInvoicePDF({ ...saved }, OWNER_SETTINGS);
-    onClose();
+    try {
+      const saved = await addInvoice({ ...form, netAmount: parseFloat(form.netAmount) });
+      // Auto-download PDF
+      try {
+        generateInvoicePDF({ ...saved }, getOwnerSettings());
+      } catch (pdfErr) {
+        console.error("PDF generation failed:", pdfErr);
+      }
+      onClose();
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -145,7 +172,7 @@ export default function Invoices() {
               </div>
             </div>
             <div className="flex border-t border-gray-700/50 divide-x divide-gray-700/50">
-              <button onClick={() => generateInvoicePDF(inv, OWNER_SETTINGS)}
+              <button onClick={() => { try { generateInvoicePDF(inv, getOwnerSettings()); } catch(e) { console.error(e); } }}
                 className="flex-1 py-2.5 text-xs text-purple-400 hover:bg-purple-500/10 flex items-center justify-center gap-1.5 transition-colors">
                 <Icon name="download" size={13} /> PDF
               </button>
