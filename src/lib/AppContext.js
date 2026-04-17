@@ -24,10 +24,20 @@ export function AppProvider({ children }) {
     setTimeout(() => setToast(null), 3000);
   }, []);
 
-  // ── Auth init ─────────────────────────────────────────────────────────────
+  // ── Auth init — wait for Google script to load ────────────────────────────
   useEffect(() => {
     if (!configured) return;
-    Google.initGoogleAuth().catch(console.error);
+    const init = () => Google.initGoogleAuth().catch(console.error);
+    if (window.google) {
+      init();
+    } else {
+      // Script not yet loaded — wait for it
+      const script = document.querySelector('script[src*="accounts.google.com/gsi/client"]');
+      if (script) {
+        script.addEventListener("load", init);
+        return () => script.removeEventListener("load", init);
+      }
+    }
   }, [configured]);
 
   const handleSignIn = async () => {
