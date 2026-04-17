@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useApp } from "../lib/AppContext";
 import { Icon, Btn } from "../components/ui";
 import { EXPENSE_CATEGORIES } from "../lib/mockData";
+import { scanReceipt, isScanningAvailable } from "../lib/scanReceipt";
 
 const today = new Date().toISOString().split("T")[0];
 
@@ -12,20 +13,46 @@ export default function Receipts() {
   const [preview, setPreview]           = useState(null);
   const [form, setForm]                 = useState({ amount: "", vendor: "", category: "Equipment", date: today, vat: "" });
   const [uploading, setUploading]       = useState(false);
+  const [scanning, setScanning]         = useState(false);
+  const [scanResult, setScanResult]     = useState(null); // { confidence }
   const fileRef = useRef();
   const cameraRef = useRef();
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  const handleFile = (file) => {
+  const handleFile = async (file) => {
     if (!file) return;
     setSelectedFile(file);
+    setScanResult(null);
+
     if (file.type.startsWith("image/")) {
       const reader = new FileReader();
       reader.onload = e => setPreview(e.target.result);
       reader.readAsDataURL(file);
     } else {
       setPreview(null);
+    }
+
+    // Auto-scan if API key is available
+    if (isScanningAvailable() && file.type.startsWith("image/")) {
+      setScanning(true);
+      try {
+        const result = await scanReceipt(file);
+        setForm(f => ({
+          ...f,
+          vendor:   result.vendor   || f.vendor,
+          date:     result.date     || f.date,
+          amount:   result.amount   || f.amount,
+          vat:      result.vat      || f.vat,
+          category: result.category || f.category,
+        }));
+        setScanResult({ confidence: result.confidence });
+      } catch (e) {
+        console.error("Scan failed:", e);
+        setScanResult({ confidence: "error", error: e.message });
+      } finally {
+        setScanning(false);
+      }
     }
   };
 
@@ -59,6 +86,7 @@ export default function Receipts() {
       // Reset
       setSelectedFile(null);
       setPreview(null);
+      setScanResult(null);
       setForm({ amount: "", vendor: "", category: "Equipment", date: today, vat: "" });
     } finally {
       setUploading(false);
@@ -67,6 +95,13 @@ export default function Receipts() {
 
   // Group receipts by file name prefix for display
   const receiptList = receipts.slice(0, 20);
+
+  const confidenceColor = {
+    high:   "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+    medium: "text-amber-400 bg-amber-500/10 border-amber-500/20",
+    low:    "text-red-400 bg-red-500/10 border-red-500/20",
+    error:  "text-red-400 bg-red-500/10 border-red-500/20",
+  };
 
   return (
     <div className="space-y-5">
@@ -85,14 +120,14 @@ export default function Receipts() {
           <div className="space-y-2">
             <img src={preview} alt="receipt" className="max-h-32 mx-auto rounded-xl object-contain" />
             <div className="text-sm text-purple-300 font-medium">{selectedFile?.name}</div>
-            <button onClick={e => { e.stopPropagation(); setSelectedFile(null); setPreview(null); }}
+            <button onClick={e => { e.stopPropagation(); setSelectedFile(null); setPreview(null); setScanResult(null); }}
               className="text-xs text-gray-500 underline">Remove</button>
           </div>
         ) : selectedFile ? (
           <div className="space-y-2">
             <div className="text-4xl">📄</div>
             <div className="text-sm text-purple-300 font-medium">{selectedFile.name}</div>
-            <button onClick={e => { e.stopPropagation(); setSelectedFile(null); }}
+            <button onClick={e => { e.stopPropagation(); setSelectedFile(null); setScanResult(null); }}
               className="text-xs text-gray-500 underline">Remove</button>
           </div>
         ) : (
@@ -100,7 +135,9 @@ export default function Receipts() {
             <span className="text-gray-500"><Icon name="camera" size={36} /></span>
             <div>
               <div className="text-sm text-gray-300 font-medium">Photo or upload a Rechnung</div>
-              <div className="text-xs text-gray-500 mt-1">Tap here or drag & drop</div>
+              <div className="text-xs text-gray-500 mt-1">
+                {isScanningAvailable() ? "AI will auto-read the values ✨" : "Tap here or drag & drop"}
+              </div>
             </div>
             <div className="flex gap-2" onClick={e => e.stopPropagation()}>
               <button onClick={() => cameraRef.current?.click()}
@@ -121,7 +158,26 @@ export default function Receipts() {
           onChange={e => handleFile(e.target.files[0])} />
       </div>
 
-      {/* Form — shown after file selected OR always for manual entry */}
+      {/* AI scanning indicator */}
+      {scanning && (
+        <div className="flex items-center gap-3 bg-purple-500/10 border border-purple-500/20 rounded-2xl px-4 py-3">
+          <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin shrink-0" />
+          <div className="text-sm text-purple-300">Reading receipt with AI…</div>
+        </div>
+      )}
+
+      {/* Scan result badge */}
+      {scanResult && !scanning && (
+        <div className={`flex items-center gap-2 border rounded-2xl px-4 py-2.5 text-xs font-medium ${confidenceColor[scanResult.confidence] || confidenceColor.low}`}>
+          {scanResult.confidence === "error" ? (
+            <><Icon name="x" size={13} /> Could not read receipt — please fill in manually</>
+          ) : (
+            <><span>✨</span> AI filled the form ({scanResult.confidence} confidence) — please verify before saving</>
+          )}
+        </div>
+      )}
+
+      {/* Form */}
       <div className="rounded-2xl border border-gray-700 bg-gray-800/40 p-4 space-y-3">
         <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
           {selectedFile ? "Receipt Details" : "Add Expense Manually"}
@@ -158,7 +214,7 @@ export default function Receipts() {
           </select>
         </div>
         <Btn onClick={handleSave} className="w-full" size="lg"
-          disabled={uploading || !form.amount || !form.vendor}>
+          disabled={uploading || scanning || !form.amount || !form.vendor}>
           {uploading ? "Saving…" : selectedFile ? (signedIn ? "Save & Upload to Drive ☁" : "Save (connect Google to upload)") : "Save Expense"}
         </Btn>
         {!signedIn && selectedFile && (
