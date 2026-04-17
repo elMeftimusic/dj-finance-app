@@ -6,7 +6,7 @@
 import { useState, useEffect } from "react";
 import { Icon } from "./ui";
 
-const DEFAULT_PIN = "1234";
+const DEFAULT_PIN = "2579";
 const STORAGE_KEY = "djfinance_pin_hash";
 const SESSION_KEY = "djfinance_unlocked";
 
@@ -21,7 +21,15 @@ function hashPin(pin) {
 }
 
 function getStoredHash() {
-  return localStorage.getItem(STORAGE_KEY) || hashPin(DEFAULT_PIN);
+  // If no PIN set yet, use default
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (!stored) return hashPin(DEFAULT_PIN);
+  return stored;
+}
+
+// Call this once to reset to default PIN (clears any corrupted stored PIN)
+export function resetToDefaultPin() {
+  localStorage.removeItem(STORAGE_KEY);
 }
 
 export function checkPin(pin) {

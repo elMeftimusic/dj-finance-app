@@ -7,7 +7,7 @@ import Tax       from "./views/Tax";
 import Invoices  from "./views/Invoices";
 import Receipts  from "./views/Receipts";
 import Settings  from "./views/Settings";
-import PinLock   from "./components/PinLock";
+import PinLock, { resetToDefaultPin } from "./components/PinLock";
 
 const TABS = [
   { id: "dashboard", label: "Home",     icon: "dashboard" },
@@ -101,6 +101,15 @@ function AppShell() {
 }
 
 export default function App() {
+  // One-time PIN reset — clears any corrupted stored PIN from previous sessions
+  useEffect(() => {
+    const resetDone = localStorage.getItem("djfinance_pin_reset_v2");
+    if (!resetDone) {
+      resetToDefaultPin();
+      localStorage.setItem("djfinance_pin_reset_v2", "1");
+    }
+  }, []);
+
   const [unlocked, setUnlocked] = useState(
     sessionStorage.getItem("djfinance_unlocked") === "1"
   );
