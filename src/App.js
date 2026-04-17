@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppProvider, useApp } from "./lib/AppContext";
 import { Icon, Toast } from "./components/ui";
 import Dashboard from "./views/Dashboard";
@@ -7,6 +7,7 @@ import Tax       from "./views/Tax";
 import Invoices  from "./views/Invoices";
 import Receipts  from "./views/Receipts";
 import Settings  from "./views/Settings";
+import PinLock   from "./components/PinLock";
 
 const TABS = [
   { id: "dashboard", label: "Home",     icon: "dashboard" },
@@ -100,6 +101,14 @@ function AppShell() {
 }
 
 export default function App() {
+  const [unlocked, setUnlocked] = useState(
+    sessionStorage.getItem("djfinance_unlocked") === "1"
+  );
+
+  if (!unlocked) {
+    return <PinLock onUnlock={() => setUnlocked(true)} />;
+  }
+
   return (
     <AppProvider>
       <AppShell />

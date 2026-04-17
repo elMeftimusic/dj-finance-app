@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useApp } from "../lib/AppContext";
 import { Icon, Btn } from "../components/ui";
+import { setNewPin, checkPin } from "../components/PinLock";
 
 const FIELD = ({ label, sublabel, ...props }) => (
   <div>
@@ -14,6 +15,24 @@ const FIELD = ({ label, sublabel, ...props }) => (
 export default function Settings() {
   const { signedIn, handleSignIn, handleSignOut, configured, refreshAll, loading } = useApp();
   const [saved, setSaved] = useState(false);
+  const [pinForm, setPinForm] = useState({ current: "", next: "", confirm: "" });
+  const [pinMsg, setPinMsg] = useState(null);
+
+  const changePin = () => {
+    if (pinForm.next.length !== 4 || !/^\d{4}$/.test(pinForm.next)) {
+      setPinMsg({ text: "PIN must be exactly 4 digits", ok: false }); return;
+    }
+    if (pinForm.next !== pinForm.confirm) {
+      setPinMsg({ text: "PINs don't match", ok: false }); return;
+    }
+    if (!checkPin(pinForm.current)) {
+      setPinMsg({ text: "Current PIN is wrong", ok: false }); return;
+    }
+    setNewPin(pinForm.next);
+    setPinForm({ current: "", next: "", confirm: "" });
+    setPinMsg({ text: "PIN changed!", ok: true });
+    setTimeout(() => setPinMsg(null), 3000);
+  };
   const [profile, setProfile] = useState({
     name: "Moe",
     lastName: "",
@@ -102,6 +121,27 @@ export default function Settings() {
           {saved ? <><Icon name="check" size={16} /> Saved!</> : "Save Details"}
         </Btn>
         <p className="text-xs text-gray-500 text-center">These are saved locally and stamped on all invoice PDFs.</p>
+      </div>
+
+      {/* PIN */}
+      <div className="rounded-2xl border border-gray-700 bg-gray-800/40 p-5 space-y-4">
+        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Change PIN</div>
+        <FIELD label="Current PIN" type="password" inputMode="numeric" maxLength={4} placeholder="••••"
+          value={pinForm.current} onChange={e => setPinForm(f => ({ ...f, current: e.target.value }))} />
+        <div className="grid grid-cols-2 gap-3">
+          <FIELD label="New PIN (4 digits)" type="password" inputMode="numeric" maxLength={4} placeholder="••••"
+            value={pinForm.next} onChange={e => setPinForm(f => ({ ...f, next: e.target.value }))} />
+          <FIELD label="Confirm new PIN" type="password" inputMode="numeric" maxLength={4} placeholder="••••"
+            value={pinForm.confirm} onChange={e => setPinForm(f => ({ ...f, confirm: e.target.value }))} />
+        </div>
+        {pinMsg && (
+          <div className={`text-xs font-medium px-3 py-2 rounded-xl ${pinMsg.ok ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
+            {pinMsg.text}
+          </div>
+        )}
+        <Btn onClick={changePin} className="w-full" variant="secondary">
+          <Icon name="check" size={15} /> Update PIN
+        </Btn>
       </div>
 
       {/* About */}
