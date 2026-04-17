@@ -24,14 +24,40 @@ export function AppProvider({ children }) {
     setTimeout(() => setToast(null), 3000);
   }, []);
 
-  // ── Auth init — wait for Google script to load ────────────────────────────
+  // ── Auth init — wait for Google script, then auto sign in if remembered ───
   useEffect(() => {
     if (!configured) return;
-    const init = () => Google.initGoogleAuth().catch(console.error);
+    const init = async () => {
+      try {
+        await Google.initGoogleAuth();
+        // If user has signed in before, silently re-authenticate
+        if (Google.hasAutoSignIn()) {
+          try {
+            await Google.silentSignIn();
+            setSignedIn(true);
+            // Load real data in background
+            const [txs, invs, tqs, recs] = await Promise.all([
+              Google.getTransactions(),
+              Google.getInvoices(),
+              Google.getTaxQuarters(),
+              Google.getReceipts(),
+            ]);
+            if (txs.length)  setTransactions(txs);
+            if (invs.length) setInvoices(invs);
+            if (tqs.length)  setTaxQuarters(tqs);
+            setReceipts(recs);
+          } catch {
+            // Silent sign-in failed — user will need to sign in manually
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
     if (window.google) {
       init();
     } else {
-      // Script not yet loaded — wait for it
       const script = document.querySelector('script[src*="accounts.google.com/gsi/client"]');
       if (script) {
         script.addEventListener("load", init);

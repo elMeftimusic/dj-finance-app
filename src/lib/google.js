@@ -26,12 +26,18 @@ export const SHEETS = {
 let tokenClient = null;
 let accessToken = null;
 
+const AUTOSIGNIN_KEY = "djfinance_autosignin";
+
 export function isConfigured() {
   return Boolean(CLIENT_ID && SPREADSHEET_ID);
 }
 
 export function isSignedIn() {
   return Boolean(accessToken);
+}
+
+export function hasAutoSignIn() {
+  return localStorage.getItem(AUTOSIGNIN_KEY) === "1";
 }
 
 export async function initGoogleAuth() {
@@ -56,6 +62,23 @@ export async function initGoogleAuth() {
   });
 }
 
+// Silent sign-in — no popup, uses existing Google session
+export function silentSignIn() {
+  return new Promise((resolve, reject) => {
+    if (!tokenClient) {
+      reject(new Error("Auth not initialized"));
+      return;
+    }
+    tokenClient.callback = (resp) => {
+      if (resp.error) { reject(resp); return; }
+      accessToken = resp.access_token;
+      resolve(resp);
+    };
+    // prompt: "" means no UI shown — uses existing Google session silently
+    tokenClient.requestAccessToken({ prompt: "" });
+  });
+}
+
 export function signIn() {
   return new Promise((resolve, reject) => {
     if (!tokenClient) {
@@ -65,6 +88,7 @@ export function signIn() {
     tokenClient.callback = (resp) => {
       if (resp.error) { reject(resp); return; }
       accessToken = resp.access_token;
+      localStorage.setItem(AUTOSIGNIN_KEY, "1"); // remember to auto sign in next time
       resolve(resp);
     };
     tokenClient.requestAccessToken({ prompt: "consent" });
@@ -76,6 +100,7 @@ export function signOut() {
     window.google?.accounts.oauth2.revoke(accessToken);
     accessToken = null;
   }
+  localStorage.removeItem(AUTOSIGNIN_KEY);
 }
 
 // ─── Sheets API Helpers ────────────────────────────────────────────────────
