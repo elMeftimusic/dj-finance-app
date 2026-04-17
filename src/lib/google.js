@@ -49,50 +49,49 @@ export async function initGoogleAuth() {
     tokenClient = window.google.accounts.oauth2.initTokenClient({
       client_id: CLIENT_ID,
       scope: SCOPES,
-      callback: (resp) => {
-        if (resp.error) {
-          reject(resp);
-          return;
-        }
-        accessToken = resp.access_token;
-        resolve(resp);
-      },
+      callback: () => {}, // set per-call below
     });
     resolve(tokenClient);
   });
 }
 
-// Silent sign-in — no popup, uses existing Google session
+// Attempt silent sign-in — no popup. Works if Google session cookie is still valid.
 export function silentSignIn() {
   return new Promise((resolve, reject) => {
-    if (!tokenClient) {
-      reject(new Error("Auth not initialized"));
-      return;
-    }
+    if (!tokenClient) { reject(new Error("Auth not initialized")); return; }
+    const timeout = setTimeout(() => reject(new Error("Silent sign-in timed out")), 5000);
     tokenClient.callback = (resp) => {
+      clearTimeout(timeout);
       if (resp.error) { reject(resp); return; }
       accessToken = resp.access_token;
+      scheduleTokenRefresh();
       resolve(resp);
     };
-    // prompt: "" means no UI shown — uses existing Google session silently
     tokenClient.requestAccessToken({ prompt: "" });
   });
 }
 
 export function signIn() {
   return new Promise((resolve, reject) => {
-    if (!tokenClient) {
-      reject(new Error("Auth not initialized"));
-      return;
-    }
+    if (!tokenClient) { reject(new Error("Auth not initialized")); return; }
     tokenClient.callback = (resp) => {
       if (resp.error) { reject(resp); return; }
       accessToken = resp.access_token;
-      localStorage.setItem(AUTOSIGNIN_KEY, "1"); // remember to auto sign in next time
+      localStorage.setItem(AUTOSIGNIN_KEY, "1");
+      scheduleTokenRefresh();
       resolve(resp);
     };
-    tokenClient.requestAccessToken({ prompt: "consent" });
+    tokenClient.requestAccessToken({ prompt: "select_account" });
   });
+}
+
+// Auto-refresh token every 45 minutes (tokens last 60 min)
+let refreshTimer = null;
+function scheduleTokenRefresh() {
+  if (refreshTimer) clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(async () => {
+    try { await silentSignIn(); } catch { /* token expired, user will see disconnect */ }
+  }, 45 * 60 * 1000);
 }
 
 export function signOut() {

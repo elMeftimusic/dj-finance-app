@@ -170,11 +170,6 @@ export default function PinLock({ onUnlock }) {
         })}
       </div>
 
-      {isUsingDefaultPin() && (
-        <div className="mt-10 text-xs text-amber-400 text-center bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3">
-          Default PIN is <span className="font-bold">1234</span> — change it in Settings
-        </div>
-      )}
     </div>
   );
 }

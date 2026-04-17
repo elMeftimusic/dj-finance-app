@@ -24,30 +24,33 @@ export function AppProvider({ children }) {
     setTimeout(() => setToast(null), 3000);
   }, []);
 
-  // ── Auth init — wait for Google script, then auto sign in if remembered ───
+  // ── Auth init — wait for Google script, then auto sign in silently ────────
   useEffect(() => {
     if (!configured) return;
     const init = async () => {
       try {
         await Google.initGoogleAuth();
-        // If user has signed in before, silently re-authenticate
         if (Google.hasAutoSignIn()) {
           try {
             await Google.silentSignIn();
             setSignedIn(true);
-            // Load real data in background
-            const [txs, invs, tqs, recs] = await Promise.all([
-              Google.getTransactions(),
-              Google.getInvoices(),
-              Google.getTaxQuarters(),
-              Google.getReceipts(),
-            ]);
-            if (txs.length)  setTransactions(txs);
-            if (invs.length) setInvoices(invs);
-            if (tqs.length)  setTaxQuarters(tqs);
-            setReceipts(recs);
+            setLoading(true);
+            try {
+              const [txs, invs, tqs, recs] = await Promise.all([
+                Google.getTransactions(),
+                Google.getInvoices(),
+                Google.getTaxQuarters(),
+                Google.getReceipts(),
+              ]);
+              if (txs.length)  setTransactions(txs);
+              if (invs.length) setInvoices(invs);
+              if (tqs.length)  setTaxQuarters(tqs);
+              setReceipts(recs);
+            } finally {
+              setLoading(false);
+            }
           } catch {
-            // Silent sign-in failed — user will need to sign in manually
+            // Silent sign-in failed (session expired) — show connect button
           }
         }
       } catch (e) {
