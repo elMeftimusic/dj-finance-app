@@ -16,9 +16,8 @@ export function isScanningAvailable() {
 export async function scanReceipt(file) {
   if (!API_KEY) throw new Error("No Anthropic API key configured");
 
-  // Convert file to base64
-  const base64 = await fileToBase64(file);
-  const mediaType = file.type || "image/jpeg";
+  // Convert file to base64 (and convert HEIC/unsupported formats to JPEG via canvas)
+  const { base64, mediaType } = await fileToBase64Safe(file);
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -72,11 +71,13 @@ Rules:
 
   if (!response.ok) {
     const err = await response.text();
+    console.error("Claude API error:", response.status, err);
     throw new Error(`Claude API error ${response.status}: ${err}`);
   }
 
   const data = await response.json();
   const text = data.content?.[0]?.text || "";
+  console.log("Claude response:", text);
 
   // Parse JSON from response
   const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -93,15 +94,43 @@ Rules:
   };
 }
 
-function fileToBase64(file) {
+// Converts any image file to base64 JPEG (handles HEIC, HEIF, and other formats)
+async function fileToBase64Safe(file) {
+  const supportedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+  const fileType = file.type || "";
+
+  // If it's already a supported type, read directly
+  if (supportedTypes.includes(fileType)) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result.split(",")[1];
+        resolve({ base64, mediaType: fileType });
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Otherwise convert via canvas to JPEG (handles HEIC, HEIF, unknown types)
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      // Remove the data:image/...;base64, prefix
-      const base64 = reader.result.split(",")[1];
-      resolve(base64);
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+      URL.revokeObjectURL(url);
+      const base64 = dataUrl.split(",")[1];
+      resolve({ base64, mediaType: "image/jpeg" });
     };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Could not load image for conversion"));
+    };
+    img.src = url;
   });
 }
