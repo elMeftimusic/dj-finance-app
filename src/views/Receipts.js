@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useApp } from "../lib/AppContext";
-import { fmt, Icon, Btn } from "../components/ui";
+import { Icon, Btn } from "../components/ui";
 import { EXPENSE_CATEGORIES } from "../lib/mockData";
 
 const today = new Date().toISOString().split("T")[0];

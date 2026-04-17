@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useApp } from "../lib/AppContext";
-import { fmt, Icon, Modal, Input, Select, Btn, StatusBadge } from "../components/ui";
+import { fmt, Icon, Modal, Input, Btn, StatusBadge } from "../components/ui";
 import { generateInvoicePDF } from "../lib/pdfInvoice";
 
 const today = new Date().toISOString().split("T")[0];

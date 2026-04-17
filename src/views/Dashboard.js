@@ -6,7 +6,6 @@ export default function Dashboard() {
   const s = stats();
 
   const nextUnfiled = taxQuarters.find(q => !q.voranmeldungFiled && q.estimatedAmount > 0);
-  const nextUnpaid  = taxQuarters.find(q => !q.paymentSent && q.estimatedAmount > 0);
 
   const today = new Date();
   const daysUntil = (dateStr) => {
