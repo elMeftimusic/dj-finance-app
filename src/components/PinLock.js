@@ -6,7 +6,7 @@
 import { useState, useEffect } from "react";
 import { Icon } from "./ui";
 
-const DEFAULT_PIN = "2579";
+const DEFAULT_PIN = "1234";
 const STORAGE_KEY = "djfinance_pin_hash";
 const SESSION_KEY = "djfinance_unlocked";
 

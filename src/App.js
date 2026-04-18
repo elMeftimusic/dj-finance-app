@@ -103,10 +103,10 @@ function AppShell() {
 export default function App() {
   // One-time PIN reset — clears any corrupted stored PIN from previous sessions
   useEffect(() => {
-    const resetDone = localStorage.getItem("djfinance_pin_reset_v2");
+    const resetDone = localStorage.getItem("djfinance_pin_reset_v3");
     if (!resetDone) {
       resetToDefaultPin();
-      localStorage.setItem("djfinance_pin_reset_v2", "1");
+      localStorage.setItem("djfinance_pin_reset_v3", "1");
     }
   }, []);
 

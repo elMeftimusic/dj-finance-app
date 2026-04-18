@@ -2,7 +2,6 @@
   "name": "dj-finance-app",
   "version": "1.0.0",
   "private": true,
-  "homepage": "https://elmeftimusic.github.io/dj-finance-app",
   "dependencies": {
     "date-fns": "^3.6.0",
     "jspdf": "^2.5.1",
@@ -14,9 +13,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
+    "test": "react-scripts test"
   },
   "eslintConfig": {
     "extends": [
@@ -34,8 +31,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {
-    "gh-pages": "^6.3.0"
   }
 }

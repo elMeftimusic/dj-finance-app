@@ -6,13 +6,13 @@ import { generateInvoicePDF } from "../lib/pdfInvoice";
 const today = new Date().toISOString().split("T")[0];
 
 const DEFAULT_OWNER = {
-  ownerName: "Mohamad Tinawi",
-  ownerAddress: "Berlin, Deutschland",
+  ownerName: "",
+  ownerAddress: "",
   ownerEmail: "",
   ownerPhone: "",
-  taxNumber: "134/5212/2986",
-  bankName: "N26",
-  iban: "DE53 1001 1001 2086 9274 76",
+  taxNumber: "",
+  bankName: "",
+  iban: "",
   bic: "",
 };
 
@@ -22,14 +22,14 @@ function getOwnerSettings() {
     if (!saved) return DEFAULT_OWNER;
     const p = JSON.parse(saved);
     return {
-      ownerName: `${p.name || ""} ${p.lastName || ""}`.trim() || DEFAULT_OWNER.ownerName,
-      ownerAddress: p.address || DEFAULT_OWNER.ownerAddress,
-      ownerEmail: p.email || DEFAULT_OWNER.ownerEmail,
-      ownerPhone: p.phone || DEFAULT_OWNER.ownerPhone,
-      taxNumber: p.taxNumber || DEFAULT_OWNER.taxNumber,
-      bankName: p.bankName || DEFAULT_OWNER.bankName,
-      iban: p.iban || DEFAULT_OWNER.iban,
-      bic: p.bic || DEFAULT_OWNER.bic,
+      ownerName: `${p.name || ""} ${p.lastName || ""}`.trim(),
+      ownerAddress: p.address || "",
+      ownerEmail: p.email || "",
+      ownerPhone: p.phone || "",
+      taxNumber: p.taxNumber || "",
+      bankName: p.bankName || "",
+      iban: p.iban || "",
+      bic: p.bic || "",
     };
   } catch {
     return DEFAULT_OWNER;

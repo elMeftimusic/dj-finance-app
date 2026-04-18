@@ -34,14 +34,14 @@ export default function Settings() {
     setTimeout(() => setPinMsg(null), 3000);
   };
   const DEFAULT_PROFILE = {
-    name: "Mohamad",
-    lastName: "Tinawi",
-    address: "Berlin, Deutschland",
+    name: "",
+    lastName: "",
+    address: "",
     email: "",
     phone: "",
-    taxNumber: "134/5212/2986",
-    bankName: "N26",
-    iban: "DE53 1001 1001 2086 9274 76",
+    taxNumber: "",
+    bankName: "",
+    iban: "",
     bic: "",
   };
 
