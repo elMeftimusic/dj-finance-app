@@ -1,7 +1,7 @@
 {
   "short_name": "DJ Finance",
   "name": "DJ Finance - Tax & Income Tracker",
-  "start_url": "/dj-finance-app/",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#030712",
   "theme_color": "#9333ea",
