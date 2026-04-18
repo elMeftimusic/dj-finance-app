@@ -164,6 +164,12 @@ export function AppProvider({ children }) {
     showToast(`Invoice marked as ${status}`);
   };
 
+  const deleteInvoice = async (id) => {
+    if (Google.isSignedIn()) await Google.deleteInvoice(id);
+    setInvoices(prev => prev.filter(inv => inv.id !== id));
+    showToast("Invoice deleted");
+  };
+
   // ── Tax Quarters ──────────────────────────────────────────────────────────
   const toggleTaxField = async (quarter, year, field) => {
     const current = taxQuarters.find(q => q.quarter === quarter && q.year === year);
@@ -224,7 +230,7 @@ export function AppProvider({ children }) {
       transactions, invoices, taxQuarters, receipts,
       handleSignIn, handleSignOut, refreshAll,
       addTransaction, deleteTransaction,
-      addInvoice, updateInvoiceStatus,
+      addInvoice, updateInvoiceStatus, deleteInvoice,
       toggleTaxField, uploadReceipt,
       stats,
     }}>

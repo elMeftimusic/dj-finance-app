@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useApp } from "../lib/AppContext";
 import { fmt, Icon, Modal, Input, Select, Btn } from "../components/ui";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "../lib/mockData";
 
 const today = new Date().toISOString().split("T")[0];
+const currentYear = new Date().getFullYear();
 
 function AddTransactionModal({ onClose }) {
   const { addTransaction } = useApp();
@@ -89,32 +90,89 @@ function AddTransactionModal({ onClose }) {
 }
 
 export default function Finances() {
-  const { transactions, deleteTransaction, stats } = useApp();
+  const { transactions, deleteTransaction } = useApp();
   const [filter, setFilter] = useState("all");
+  const [year, setYear] = useState(String(currentYear));
   const [showAdd, setShowAdd] = useState(false);
-  const s = stats();
 
-  const filtered = filter === "all" ? transactions : transactions.filter(t => t.type === filter);
+  // Get all available years from transactions + current year
+  const availableYears = useMemo(() => {
+    const years = new Set(transactions.map(t => t.date?.split("-")[0]).filter(Boolean));
+    years.add(String(currentYear));
+    if (currentYear > 2025) years.add(String(currentYear - 1));
+    return ["all", ...Array.from(years).sort((a, b) => b - a)];
+  }, [transactions]);
+
+  // Filter by year and type
+  const filtered = useMemo(() => {
+    return transactions.filter(t => {
+      const matchYear = year === "all" || t.date?.startsWith(year);
+      const matchType = filter === "all" || t.type === filter;
+      return matchYear && matchType;
+    });
+  }, [transactions, year, filter]);
+
+  // Stats for selected year
+  const income   = filtered.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0);
+  const expenses = filtered.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0);
+  const profit   = income - expenses;
+  const vatCollected  = filtered.filter(t => t.type === "income").reduce((s, t) => s + (t.vat || 0), 0);
+  const vatDeductible = filtered.filter(t => t.type === "expense").reduce((s, t) => s + (t.vat || 0), 0);
+  const vatOwed = vatCollected - vatDeductible;
 
   return (
     <div className="space-y-5">
+
+      {/* Year selector */}
+      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+        {availableYears.map(y => (
+          <button key={y} onClick={() => setYear(y)}
+            className={`shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+              year === y ? "bg-purple-600 text-white" : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+            }`}>
+            {y === "all" ? "All years" : y}
+          </button>
+        ))}
+      </div>
+
       {/* Summary row */}
       <div className="grid grid-cols-3 gap-2">
         <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-3 text-center">
-          <div className="text-lg font-bold text-emerald-400">{fmt(s.income)}</div>
+          <div className="text-base font-bold text-emerald-400">{fmt(income)}</div>
           <div className="text-xs text-gray-400 mt-0.5">Income</div>
         </div>
         <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-3 text-center">
-          <div className="text-lg font-bold text-red-400">{fmt(s.expenses)}</div>
+          <div className="text-base font-bold text-red-400">{fmt(expenses)}</div>
           <div className="text-xs text-gray-400 mt-0.5">Expenses</div>
         </div>
         <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-3 text-center">
-          <div className="text-lg font-bold text-blue-400">{fmt(s.profit)}</div>
+          <div className="text-base font-bold text-blue-400">{fmt(profit)}</div>
           <div className="text-xs text-gray-400 mt-0.5">Profit</div>
         </div>
       </div>
 
-      {/* Filter + Add */}
+      {/* VAT summary for year */}
+      <div className="bg-gray-800/40 border border-gray-700 rounded-2xl p-4">
+        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+          VAT {year === "all" ? "(all years)" : year}
+        </div>
+        <div className="grid grid-cols-3 gap-3 text-center">
+          <div>
+            <div className="text-sm font-bold text-emerald-400">{fmt(vatCollected)}</div>
+            <div className="text-xs text-gray-500 mt-0.5">Collected</div>
+          </div>
+          <div>
+            <div className="text-sm font-bold text-blue-400">{fmt(vatDeductible)}</div>
+            <div className="text-xs text-gray-500 mt-0.5">Deductible</div>
+          </div>
+          <div>
+            <div className={`text-sm font-bold ${vatOwed >= 0 ? "text-amber-400" : "text-emerald-400"}`}>{fmt(vatOwed)}</div>
+            <div className="text-xs text-gray-500 mt-0.5">Owed</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Type filter + Add */}
       <div className="flex gap-2">
         {["all", "income", "expense"].map(f => (
           <button key={f} onClick={() => setFilter(f)}
@@ -130,10 +188,12 @@ export default function Finances() {
         </button>
       </div>
 
-      {/* List */}
+      {/* Transaction list */}
       <div className="space-y-2">
         {filtered.length === 0 && (
-          <div className="text-center text-gray-500 text-sm py-10">No transactions yet</div>
+          <div className="text-center text-gray-500 text-sm py-10">
+            No transactions{year !== "all" ? ` in ${year}` : ""} yet
+          </div>
         )}
         {filtered.map(t => (
           <div key={t.id} className="bg-gray-800/60 rounded-xl border border-gray-700/50 overflow-hidden">

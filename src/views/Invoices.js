@@ -113,9 +113,10 @@ function NewInvoiceModal({ onClose }) {
 }
 
 export default function Invoices() {
-  const { invoices, updateInvoiceStatus } = useApp();
+  const { invoices, updateInvoiceStatus, deleteInvoice } = useApp();
   const [showNew, setShowNew] = useState(false);
   const [filter, setFilter] = useState("all");
+  const [confirmDelete, setConfirmDelete] = useState(null); // invoice id to delete
 
   const filtered = filter === "all" ? invoices : invoices.filter(i => i.status === filter);
   const totalPending = invoices.filter(i => i.status === "pending").reduce((s, i) => s + i.total, 0);
@@ -188,10 +189,26 @@ export default function Invoices() {
                   Undo
                 </button>
               )}
+              {confirmDelete === inv.id ? (
+                <button onClick={async () => { await deleteInvoice(inv.id); setConfirmDelete(null); }}
+                  className="flex-1 py-2.5 text-xs text-white bg-red-600 hover:bg-red-700 flex items-center justify-center gap-1.5 transition-colors">
+                  <Icon name="trash" size={13} /> Confirm
+                </button>
+              ) : (
+                <button onClick={() => setConfirmDelete(inv.id)}
+                  className="flex-1 py-2.5 text-xs text-red-400 hover:bg-red-500/10 flex items-center justify-center gap-1.5 transition-colors">
+                  <Icon name="trash" size={13} /> Delete
+                </button>
+              )}
             </div>
           </div>
         ))}
       </div>
+
+      {/* Tap outside to cancel delete confirm */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-10" onClick={() => setConfirmDelete(null)} />
+      )}
 
       {showNew && <NewInvoiceModal onClose={() => setShowNew(false)} />}
     </div>

@@ -201,6 +201,14 @@ export async function updateInvoiceStatus(id, status) {
   });
 }
 
+export async function deleteInvoice(id) {
+  const data = await sheetsRequest("GET", `/values/${SHEETS.INVOICES}!A:A`);
+  const rows = data.values || [];
+  const rowIndex = rows.findIndex((r) => r[0] === id);
+  if (rowIndex < 1) return;
+  await sheetsRequest("POST", `/values/${SHEETS.INVOICES}!A${rowIndex + 1}:J${rowIndex + 1}:clear`, {});
+}
+
 // ─── Tax Quarters ──────────────────────────────────────────────────────────
 // Columns: quarter | year | deadline | voranmeldungFiled | paymentSent | estimatedAmount | actualAmount
 
