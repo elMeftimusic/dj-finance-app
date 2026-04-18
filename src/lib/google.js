@@ -202,11 +202,31 @@ export async function updateInvoiceStatus(id, status) {
 }
 
 export async function deleteInvoice(id) {
+  // Step 1: find the row index
   const data = await sheetsRequest("GET", `/values/${SHEETS.INVOICES}!A:A`);
   const rows = data.values || [];
   const rowIndex = rows.findIndex((r) => r[0] === id);
   if (rowIndex < 1) return;
-  await sheetsRequest("POST", `/values/${SHEETS.INVOICES}!A${rowIndex + 1}:J${rowIndex + 1}:clear`, {});
+
+  // Step 2: get the sheet's numeric sheetId for the Invoices tab
+  const meta = await sheetsRequest("GET", `?fields=sheets(properties(sheetId,title))`);
+  const sheet = meta.sheets?.find((s) => s.properties.title === SHEETS.INVOICES);
+  if (!sheet) return;
+  const sheetId = sheet.properties.sheetId;
+
+  // Step 3: delete the actual row (not just clear it)
+  await sheetsRequest("POST", `:batchUpdate`, {
+    requests: [{
+      deleteDimension: {
+        range: {
+          sheetId,
+          dimension: "ROWS",
+          startIndex: rowIndex,
+          endIndex: rowIndex + 1,
+        },
+      },
+    }],
+  });
 }
 
 // ─── Tax Quarters ──────────────────────────────────────────────────────────
