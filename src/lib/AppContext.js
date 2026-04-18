@@ -1,9 +1,7 @@
 // ─── App-wide State & Data Context ────────────────────────────────────────
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import * as Google from "./google";
-import {
-  MOCK_TRANSACTIONS, MOCK_INVOICES, MOCK_TAX_QUARTERS, MOCK_RECEIPTS,
-} from "./mockData";
+import { MOCK_TAX_QUARTERS } from "./mockData";
 
 const AppContext = createContext(null);
 
@@ -11,11 +9,12 @@ export function AppProvider({ children }) {
   const configured = Google.isConfigured();
 
   const [signedIn, setSignedIn]         = useState(false);
+  const [authReady, setAuthReady]       = useState(false); // true once we know auth state
   const [loading, setLoading]           = useState(false);
-  const [transactions, setTransactions] = useState(MOCK_TRANSACTIONS);
-  const [invoices, setInvoices]         = useState(MOCK_INVOICES);
+  const [transactions, setTransactions] = useState([]);
+  const [invoices, setInvoices]         = useState([]);
   const [taxQuarters, setTaxQuarters]   = useState(MOCK_TAX_QUARTERS);
-  const [receipts, setReceipts]         = useState(MOCK_RECEIPTS);
+  const [receipts, setReceipts]         = useState([]);
   const [toast, setToast]               = useState(null);
 
   // ── Toast helper ──────────────────────────────────────────────────────────
@@ -26,7 +25,11 @@ export function AppProvider({ children }) {
 
   // ── Auth init — wait for Google script, then auto sign in silently ────────
   useEffect(() => {
-    if (!configured) return;
+    if (!configured) {
+      setAuthReady(true);
+      return;
+    }
+
     const init = async () => {
       try {
         await Google.initGoogleAuth();
@@ -50,11 +53,13 @@ export function AppProvider({ children }) {
               setLoading(false);
             }
           } catch {
-            // Silent sign-in failed (session expired) — show connect button
+            // Silent sign-in failed — user needs to tap "Sign in"
           }
         }
       } catch (e) {
         console.error(e);
+      } finally {
+        setAuthReady(true); // always mark ready so the app renders
       }
     };
 
@@ -65,6 +70,8 @@ export function AppProvider({ children }) {
       if (script) {
         script.addEventListener("load", init);
         return () => script.removeEventListener("load", init);
+      } else {
+        setAuthReady(true); // no script found, just show the app
       }
     }
   }, [configured]);
@@ -83,11 +90,10 @@ export function AppProvider({ children }) {
   const handleSignOut = () => {
     Google.signOut();
     setSignedIn(false);
-    setTransactions(MOCK_TRANSACTIONS);
-    setInvoices(MOCK_INVOICES);
+    setTransactions([]);
+    setInvoices([]);
     setTaxQuarters(MOCK_TAX_QUARTERS);
-    setReceipts(MOCK_RECEIPTS);
-    showToast("Signed out — showing demo data");
+    setReceipts([]);
   };
 
   // ── Fetch all data ────────────────────────────────────────────────────────
@@ -114,15 +120,13 @@ export function AppProvider({ children }) {
 
   // ── Transactions ──────────────────────────────────────────────────────────
   const addTransaction = async (tx) => {
-    if (Google.isSignedIn()) {
-      const saved = await Google.addTransaction(tx);
-      setTransactions(prev => [saved, ...prev]);
-      showToast("Transaction saved to Google Sheets ✓");
-    } else {
-      const fake = { ...tx, id: `TX-${Date.now()}`, quarter: Google.getQuarter(tx.date), vat: tx.type === "income" ? tx.amount * 0.19 : tx.vat || 0 };
-      setTransactions(prev => [fake, ...prev]);
-      showToast("Demo mode — not saved to Sheets");
+    if (!Google.isSignedIn()) {
+      showToast("Sign in with Google first", "error");
+      return;
     }
+    const saved = await Google.addTransaction(tx);
+    setTransactions(prev => [saved, ...prev]);
+    showToast("Transaction saved ✓");
   };
 
   const deleteTransaction = async (id) => {
@@ -135,17 +139,23 @@ export function AppProvider({ children }) {
 
   // ── Invoices ──────────────────────────────────────────────────────────────
   const addInvoice = async (inv) => {
-    if (Google.isSignedIn()) {
-      const saved = await Google.addInvoice(inv);
-      setInvoices(prev => [saved, ...prev]);
-      showToast("Invoice saved to Google Sheets ✓");
-      return saved;
-    } else {
-      const fake = { ...inv, id: `INV-${String(invoices.length + 1).padStart(3,"0")}`, vat: inv.netAmount * 0.19, total: inv.netAmount * 1.19 };
+    if (!Google.isSignedIn()) {
+      // Still generate a local invoice for PDF download even without Google
+      const fake = {
+        ...inv,
+        id: `INV-${String(Date.now()).slice(-4)}`,
+        vat: inv.netAmount * 0.19,
+        total: inv.netAmount * 1.19,
+        status: "pending",
+      };
       setInvoices(prev => [fake, ...prev]);
-      showToast("Demo mode — not saved to Sheets");
+      showToast("Invoice created (sign in to save to Sheets)");
       return fake;
     }
+    const saved = await Google.addInvoice(inv);
+    setInvoices(prev => [saved, ...prev]);
+    showToast("Invoice saved to Google Sheets ✓");
+    return saved;
   };
 
   const updateInvoiceStatus = async (id, status) => {
@@ -168,7 +178,7 @@ export function AppProvider({ children }) {
   // ── Receipt Upload ────────────────────────────────────────────────────────
   const uploadReceipt = async (file, transactionId) => {
     if (!Google.isSignedIn()) {
-      showToast("Connect Google to upload receipts", "error");
+      showToast("Sign in with Google to upload receipts", "error");
       return null;
     }
     try {
@@ -191,9 +201,26 @@ export function AppProvider({ children }) {
     return { income, expenses, profit: income - expenses, vatCollected, vatDeductible, vatOwed: vatCollected - vatDeductible };
   }, [transactions]);
 
+  // ── Loading screen while auth resolves ───────────────────────────────────
+  if (!authReady) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center gap-4"
+        style={{ maxWidth: 430, margin: "0 auto" }}>
+        <div className="w-14 h-14 rounded-2xl bg-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 18V5l12-2v13" />
+            <circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
+          </svg>
+        </div>
+        <div className="text-white font-bold text-lg tracking-tight">DJ Finance</div>
+        <div className="w-6 h-6 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <AppContext.Provider value={{
-      configured, signedIn, loading, toast,
+      configured, signedIn, authReady, loading, toast,
       transactions, invoices, taxQuarters, receipts,
       handleSignIn, handleSignOut, refreshAll,
       addTransaction, deleteTransaction,

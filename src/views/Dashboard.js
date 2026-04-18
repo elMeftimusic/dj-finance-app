@@ -30,16 +30,16 @@ export default function Dashboard() {
   return (
     <div className="space-y-5">
 
-      {/* Connect banner */}
+      {/* Sign in prompt — shown when not connected */}
       {configured && !signedIn && (
-        <div className="flex items-center gap-3 bg-blue-500/10 border border-blue-500/30 rounded-2xl p-4">
-          <span className="text-blue-400"><Icon name="google" size={20} /></span>
+        <div className="flex items-center gap-3 bg-gray-800/60 border border-gray-700 rounded-2xl p-4">
+          <span className="text-gray-400"><Icon name="google" size={20} /></span>
           <div className="flex-1">
-            <div className="text-blue-300 font-semibold text-sm">Demo Mode</div>
-            <div className="text-gray-400 text-xs">Connect Google to save real data</div>
+            <div className="text-gray-300 font-semibold text-sm">Not connected</div>
+            <div className="text-gray-500 text-xs">Sign in to load your data</div>
           </div>
-          <button onClick={handleSignIn} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition-colors">
-            Connect
+          <button onClick={handleSignIn} className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition-colors">
+            Sign in
           </button>
         </div>
       )}
