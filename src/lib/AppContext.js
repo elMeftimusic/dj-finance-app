@@ -129,12 +129,11 @@ export function AppProvider({ children }) {
     showToast("Transaction saved ✓");
   };
 
-  const deleteTransaction = async (id) => {
-    if (Google.isSignedIn()) {
-      await Google.deleteTransaction(id);
-      showToast("Transaction deleted");
-    }
+  const deleteTransaction = (id) => {
+    // Remove from UI immediately, sync to Sheets in background
     setTransactions(prev => prev.filter(t => t.id !== id));
+    showToast("Transaction deleted");
+    if (Google.isSignedIn()) Google.deleteTransaction(id).catch(console.error);
   };
 
   // ── Invoices ──────────────────────────────────────────────────────────────
@@ -164,10 +163,11 @@ export function AppProvider({ children }) {
     showToast(`Invoice marked as ${status}`);
   };
 
-  const deleteInvoice = async (id) => {
-    if (Google.isSignedIn()) await Google.deleteInvoice(id);
+  const deleteInvoice = (id) => {
+    // Remove from UI immediately, sync to Sheets in background
     setInvoices(prev => prev.filter(inv => inv.id !== id));
     showToast("Invoice deleted");
+    if (Google.isSignedIn()) Google.deleteInvoice(id).catch(console.error);
   };
 
   // ── Tax Quarters ──────────────────────────────────────────────────────────
