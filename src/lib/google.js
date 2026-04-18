@@ -11,7 +11,7 @@ const DRIVE_FOLDER_ID = process.env.REACT_APP_DRIVE_FOLDER_ID || "";
 
 const SCOPES = [
   "https://www.googleapis.com/auth/spreadsheets",
-  "https://www.googleapis.com/auth/drive.file",
+  "https://www.googleapis.com/auth/drive",
 ].join(" ");
 
 // Sheet names inside the Google Spreadsheet
@@ -262,7 +262,10 @@ export async function uploadReceipt(file, transactionId) {
     headers: { Authorization: `Bearer ${accessToken}` },
     body: form,
   });
-  if (!res.ok) throw new Error(`Drive upload failed: ${res.status}`);
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Drive upload failed ${res.status}: ${errText}`);
+  }
   return res.json(); // { id, name, webViewLink }
 }
 

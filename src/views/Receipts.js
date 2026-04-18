@@ -78,14 +78,9 @@ export default function Receipts() {
         category: form.category,
       });
 
-      // 2. Upload receipt to Drive (if signed in) — non-blocking, expense is always saved
+      // 2. Upload receipt to Drive (if signed in) — expense always saved regardless
       if (selectedFile && signedIn) {
-        try {
-          await uploadReceipt(selectedFile, txId);
-        } catch (driveErr) {
-          console.warn("Drive upload failed (expense still saved):", driveErr);
-          // Don't block the save — just skip the upload silently
-        }
+        await uploadReceipt(selectedFile, txId);
       }
 
       // Reset
