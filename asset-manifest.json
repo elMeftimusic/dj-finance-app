@@ -1,19 +1,19 @@
 {
   "files": {
     "main.css": "/dj-finance-app/static/css/main.04642078.css",
-    "main.js": "/dj-finance-app/static/js/main.0c929f99.js",
+    "main.js": "/dj-finance-app/static/js/main.31d21ccd.js",
     "static/js/239.5772e946.chunk.js": "/dj-finance-app/static/js/239.5772e946.chunk.js",
     "static/js/213.7d3e6b32.chunk.js": "/dj-finance-app/static/js/213.7d3e6b32.chunk.js",
     "static/js/732.63df804d.chunk.js": "/dj-finance-app/static/js/732.63df804d.chunk.js",
     "index.html": "/dj-finance-app/index.html",
     "main.04642078.css.map": "/dj-finance-app/static/css/main.04642078.css.map",
-    "main.0c929f99.js.map": "/dj-finance-app/static/js/main.0c929f99.js.map",
+    "main.31d21ccd.js.map": "/dj-finance-app/static/js/main.31d21ccd.js.map",
     "239.5772e946.chunk.js.map": "/dj-finance-app/static/js/239.5772e946.chunk.js.map",
     "213.7d3e6b32.chunk.js.map": "/dj-finance-app/static/js/213.7d3e6b32.chunk.js.map",
     "732.63df804d.chunk.js.map": "/dj-finance-app/static/js/732.63df804d.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.04642078.css",
-    "static/js/main.0c929f99.js"
+    "static/js/main.31d21ccd.js"
   ]
 }
