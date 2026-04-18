@@ -11,7 +11,7 @@ export default function Receipts() {
   const [dragging, setDragging]         = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [preview, setPreview]           = useState(null);
-  const [form, setForm]                 = useState({ amount: "", vendor: "", category: "Equipment", date: today, vat: "" });
+  const [form, setForm]                 = useState({ amount: "", vendor: "", category: "Equipment", date: today, vat: "", notes: "" });
   const [uploading, setUploading]       = useState(false);
   const [scanning, setScanning]         = useState(false);
   const [scanResult, setScanResult]     = useState(null); // { confidence }
@@ -74,7 +74,7 @@ export default function Receipts() {
         date: form.date,
         amount: parseFloat(form.amount),
         vat: parseFloat(form.vat) || 0,
-        description: form.vendor,
+        description: form.notes ? `${form.vendor} — ${form.notes}` : form.vendor,
         category: form.category,
       });
 
@@ -87,7 +87,7 @@ export default function Receipts() {
       setSelectedFile(null);
       setPreview(null);
       setScanResult(null);
-      setForm({ amount: "", vendor: "", category: "Equipment", date: today, vat: "" });
+      setForm({ amount: "", vendor: "", category: "Equipment", date: today, vat: "", notes: "" });
     } finally {
       setUploading(false);
     }
@@ -212,6 +212,12 @@ export default function Receipts() {
             value={form.category} onChange={e => set("category", e.target.value)}>
             {EXPENSE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
+        </div>
+        <div>
+          <label className="text-xs text-gray-400 mb-1 block">Notes / What was it for?</label>
+          <input className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+            placeholder="e.g. Headphones for DJ sets, travel to gig in Hamburg…"
+            value={form.notes} onChange={e => set("notes", e.target.value)} />
         </div>
         <Btn onClick={handleSave} className="w-full" size="lg"
           disabled={uploading || scanning || !form.amount || !form.vendor}>
