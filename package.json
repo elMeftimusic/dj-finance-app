@@ -2,6 +2,7 @@
   "name": "dj-finance-app",
   "version": "1.0.0",
   "private": true,
+  "homepage": "https://elmeftimusic.github.io/dj-finance-app",
   "dependencies": {
     "date-fns": "^3.6.0",
     "jspdf": "^2.5.1",
