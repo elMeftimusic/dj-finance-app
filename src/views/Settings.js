@@ -17,6 +17,14 @@ export default function Settings() {
   const [saved, setSaved] = useState(false);
   const [pinForm, setPinForm] = useState({ current: "", next: "", confirm: "" });
   const [pinMsg, setPinMsg] = useState(null);
+  const [anthropicKey, setAnthropicKey] = useState(() => localStorage.getItem("djfinance_anthropic_key") || "");
+  const [keySaved, setKeySaved] = useState(false);
+
+  const saveAnthropicKey = () => {
+    localStorage.setItem("djfinance_anthropic_key", anthropicKey.trim());
+    setKeySaved(true);
+    setTimeout(() => setKeySaved(false), 2500);
+  };
 
   const changePin = () => {
     if (pinForm.next.length !== 4 || !/^\d{4}$/.test(pinForm.next)) {
@@ -134,6 +142,29 @@ export default function Settings() {
           {saved ? <><Icon name="check" size={16} /> Saved!</> : "Save Details"}
         </Btn>
         <p className="text-xs text-gray-500 text-center">These are saved locally and stamped on all invoice PDFs.</p>
+      </div>
+
+      {/* AI Receipt Scanning */}
+      <div className="rounded-2xl border border-gray-700 bg-gray-800/40 p-5 space-y-4">
+        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">AI Receipt Scanning</div>
+        {anthropicKey && (
+          <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-2 text-xs text-emerald-300">
+            <Icon name="check" size={13} /> Key saved — receipt scanning is active ✨
+          </div>
+        )}
+        <FIELD
+          label="Anthropic API Key"
+          type="password"
+          placeholder="sk-ant-api03-..."
+          value={anthropicKey}
+          onChange={e => setAnthropicKey(e.target.value)}
+        />
+        <p className="text-xs text-gray-500">
+          Get your key at <span className="text-purple-300">console.anthropic.com</span> → API Keys. Stored only on this device, never in the code.
+        </p>
+        <Btn onClick={saveAnthropicKey} className="w-full" variant={keySaved ? "success" : "secondary"}>
+          {keySaved ? <><Icon name="check" size={16} /> Saved!</> : "Save API Key"}
+        </Btn>
       </div>
 
       {/* PIN */}

@@ -2,10 +2,12 @@
 // Sends a receipt image to Claude and extracts structured expense data.
 // Requires REACT_APP_ANTHROPIC_API_KEY in your environment variables.
 
-const API_KEY = process.env.REACT_APP_ANTHROPIC_API_KEY || "";
+function getApiKey() {
+  return localStorage.getItem("djfinance_anthropic_key") || "";
+}
 
 export function isScanningAvailable() {
-  return Boolean(API_KEY);
+  return Boolean(getApiKey());
 }
 
 /**
@@ -14,6 +16,7 @@ export function isScanningAvailable() {
  * @returns {Promise<{ vendor, date, amount, vat, category, confidence }>}
  */
 export async function scanReceipt(file) {
+  const API_KEY = getApiKey();
   if (!API_KEY) throw new Error("No Anthropic API key configured");
 
   // Convert file to base64 (and convert HEIC/unsupported formats to JPEG via canvas)
